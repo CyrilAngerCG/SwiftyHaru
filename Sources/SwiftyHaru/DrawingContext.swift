@@ -892,4 +892,33 @@ public final class DrawingContext {
 
         return (isSufficientSpace: !isInsufficientSpace, charactersPrinted: Int(charactersPrinted))
     }
+    
+    /// Prints the image at the specified position on the page.
+    ///
+    /// - Parameters:
+    ///   - image: The image to print.
+    ///   - rect: The region to output the image.
+    public func draw(image: PDFImage, in rect: Rectangle) throws {
+        let status = HPDF_Page_DrawImage(_page, image.handle, rect.x, rect.y, rect.width, rect.height)
+        if status != UInt(HPDF_OK) {
+            HPDF_ResetError(_documentHandle)
+            throw _document._error
+        }
+    }
+    
+    /// Adds an annotation.
+    ///
+    /// - Parameters:
+    ///   - url: The link.
+    ///   - rect: The region to output the link.
+    /// - Returns: The annotation.
+    @discardableResult
+    public func addAnnotation(url: URL, in rect: Rectangle) throws -> PDFAnnotation {
+        let annotation = HPDF_Page_CreateURILinkAnnot(_page, HPDF_Rect(left: rect.x, bottom: rect.maxY, right: rect.maxX, top: rect.y), url.absoluteString)
+        guard let annotation else {
+            HPDF_ResetError(_documentHandle)
+            throw _document._error
+        }
+        return PDFAnnotation(handle: annotation)
+    }
 }

@@ -59,11 +59,10 @@ public final class PDFDocument {
     
     // MARK: - Creating pages
 
-    private func _drawOnPage(_ page: PDFPage, _ draw: (DrawingContext) throws -> Void) rethrows -> PDFPage {
+    public func drawOnPage(_ page: PDFPage, _ draw: (DrawingContext) throws -> Void) rethrows {
         let context = DrawingContext(page: page, document: self)
         defer { context._isInvalidated = true }
         try draw(context)
-        return page
     }
 
     // In libHaru, each page object maintains a flag named "graphics mode".
@@ -127,7 +126,9 @@ public final class PDFDocument {
     ///            of the call to the closure.
     @discardableResult
     public func addPage(_ draw: (DrawingContext) throws -> Void) rethrows -> PDFPage {
-        return try _drawOnPage(addPage(), draw)
+        let page = addPage()
+        try drawOnPage(page, draw)
+        return page
     }
 
     /// Creates a new page of the specified width and height and adds it after the last page of the document.
@@ -157,7 +158,9 @@ public final class PDFDocument {
     public func addPage(width: Float,
                         height: Float,
                         _ draw: (DrawingContext) throws -> Void) rethrows -> PDFPage {
-        return try _drawOnPage(addPage(width: width, height: height), draw)
+        let page = addPage(width: width, height: height)
+        try drawOnPage(page, draw)
+        return page
     }
 
     /// Creates a new page of the specified size and direction and adds it after the last page of the document.
@@ -187,7 +190,9 @@ public final class PDFDocument {
     public func addPage(size: PDFPage.Size,
                         direction: PDFPage.Direction,
                         _ draw: (DrawingContext) throws -> Void) rethrows -> PDFPage {
-        return try _drawOnPage(addPage(size: size, direction: direction), draw)
+        let page = addPage(size: size, direction: direction)
+        try drawOnPage(page, draw)
+        return page
     }
 
     /// Creates a new page and inserts it just before the page with the specified index.
@@ -218,7 +223,9 @@ public final class PDFDocument {
     ///            of the call to the closure.
     @discardableResult
     public func insertPage(atIndex index: Int, _ draw: (DrawingContext) throws -> Void) rethrows -> PDFPage {
-        return try _drawOnPage(insertPage(atIndex: index), draw)
+        let page = insertPage(atIndex: index)
+        try drawOnPage(page, draw)
+        return page
     }
 
     /// Creates a new page of the specified width and height and inserts it just before the page
@@ -255,7 +262,9 @@ public final class PDFDocument {
                            height: Float,
                            atIndex index: Int,
                            _ draw: (DrawingContext) throws -> Void) rethrows -> PDFPage {
-        return try _drawOnPage(insertPage(width: width, height: height, atIndex: index), draw)
+        let page = insertPage(width: width, height: height, atIndex: index)
+        try drawOnPage(page, draw)
+        return page
     }
 
     /// Creates a new page of the specified size and direction and inserts it just before the page
@@ -293,7 +302,9 @@ public final class PDFDocument {
                            direction: PDFPage.Direction,
                            atIndex index: Int,
                            _ draw: (DrawingContext) throws -> Void) rethrows -> PDFPage {
-        return try _drawOnPage(insertPage(size: size, direction: direction, atIndex: index), draw)
+        let page = insertPage(size: size, direction: direction, atIndex: index)
+        try drawOnPage(page, draw)
+        return page
     }
     
     // MARK: - Getting data
@@ -370,6 +381,9 @@ public final class PDFDocument {
 
     // MARK: - Including fonts
     
+    /// TrueType fonts cache
+    private var loadedTrueTypeFonts: [String: Font] = [:]
+    
     /// Loads a TrueType font from `data` and registers it to a document.
     ///
     /// - parameter data:               Contents of a `.ttf` file.
@@ -407,6 +421,26 @@ public final class PDFDocument {
         }
     }
     
+    /// Loads a TrueType font at `url` and registers it to a document.
+    ///
+    /// - parameter url: URL of a `.ttf` file.
+    /// - parameter embeddingGlyphData: If this parameter is set to `true`, the glyph data of the font is embedded,
+    ///                                 otherwise only the matrix data is included in PDF file.
+    ///
+    /// - throws
+    ///
+    /// - returns: The loaded font.
+    public func loadTrueTypeFont(at url: URL, embeddingGlyphData: Bool = true) throws -> Font {
+        let key = url.absoluteString
+        if let font = loadedTrueTypeFonts[key] {
+            return font
+        }
+        let data = try Data(contentsOf: url)
+        let font = try loadTrueTypeFont(from: data, embeddingGlyphData: embeddingGlyphData)
+        loadedTrueTypeFonts[key] = font
+        return font
+    }
+    
     /// Loads a TrueType font from a TrueType Collection and registers it to a document.
     ///
     /// - parameter data:               Contents of a `.ttc` file.
@@ -441,6 +475,27 @@ public final class PDFDocument {
             HPDF_ResetError(_documentHandle)
             throw _error
         }
+    }
+    
+    /// Loads a TrueType font from a TrueType Collection and registers it to a document.
+    ///
+    /// - parameter url: URL of a `.ttc` file.
+    /// - parameter index:              The index of the font to be loaded.
+    /// - parameter embeddingGlyphData: If this parameter is set to `true`, the glyph data of the font is embedded,
+    ///                                 otherwise only the matrix data is included in PDF file.
+    ///
+    /// - throws
+    ///
+    /// - returns: The loaded font.
+    public func loadTrueTypeFontFromCollection(at url: URL, index: Int, embeddingGlyphData: Bool = true) throws -> Font {
+        let key = "\(url.absoluteString):\(index)"
+        if let font = loadedTrueTypeFonts[key] {
+            return font
+        }
+        let data = try Data(contentsOf: url)
+        let font = try loadTrueTypeFontFromCollection(from: data, index: index, embeddingGlyphData: embeddingGlyphData)
+        loadedTrueTypeFonts[key] = font
+        return font
     }
     
     private var _jpEncodingsEnabled = false
@@ -483,7 +538,88 @@ public final class PDFDocument {
             _utfEncodingsEnabled = true
         }
     }
-
+    
+    // MARK: - Including images
+    
+    /// Images cache
+    private var loadedImages: [String: PDFImage] = [:]
+    
+    /// Loads a JPEG image from `data` and registers it to a document.
+    ///
+    /// - parameter data: Contents of a `.jpg` file.
+    ///
+    /// - throws
+    ///
+    /// - returns: The loaded image.
+    public func loadJpegImage(from data: Data) throws -> PDFImage {
+        let image = data.withUnsafeBytes { (pointer: UnsafePointer<UInt8>) in
+            return HPDF_LoadJpegImageFromMem(_documentHandle, pointer, HPDF_UINT(data.count))
+        }
+        
+        guard let image else {
+            HPDF_ResetError(_documentHandle)
+            throw _error
+        }
+        
+        return PDFImage(handle: image)
+    }
+    
+    /// Loads a JPEG image at `url` and registers it to a document.
+    ///
+    /// - parameter url: URL of a `.jpg` file.
+    ///
+    /// - throws
+    ///
+    /// - returns: The loaded font.
+    public func loadJpegImage(at url: URL) throws -> PDFImage {
+        let key = url.absoluteString
+        if let image = loadedImages[key] {
+            return image
+        }
+        let data = try Data(contentsOf: url)
+        let image = try loadJpegImage(from: data)
+        loadedImages[key] = image
+        return image
+    }
+    
+    /// Loads a PNG image from `data` and registers it to a document.
+    ///
+    /// - parameter data: Contents of a `.png` file.
+    ///
+    /// - throws
+    ///
+    /// - returns: The loaded image.
+    public func loadPngImage(from data: Data) throws -> PDFImage {
+        let image = data.withUnsafeBytes { (pointer: UnsafePointer<UInt8>) in
+            return HPDF_LoadPngImageFromMem(_documentHandle, pointer, HPDF_UINT(data.count))
+        }
+        
+        guard let image else {
+            HPDF_ResetError(_documentHandle)
+            throw _error
+        }
+        
+        return PDFImage(handle: image)
+    }
+    
+    /// Loads a PNG image at `url` and registers it to a document.
+    ///
+    /// - parameter url: URL of a `.png` file.
+    ///
+    /// - throws
+    ///
+    /// - returns: The loaded font.
+    public func loadPngImage(at url: URL) throws -> PDFImage {
+        let key = url.absoluteString
+        if let image = loadedImages[key] {
+            return image
+        }
+        let data = try Data(contentsOf: url)
+        let image = try loadPngImage(from: data)
+        loadedImages[key] = image
+        return image
+    }
+    
     // MARK: - Compression
 
     /// Set the mode of compression.

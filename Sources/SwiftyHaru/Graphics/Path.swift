@@ -549,3 +549,48 @@ extension Path {
         case winding
     }
 }
+
+public extension Path {
+    static func line(from p1: Point, to p2: Point) -> Self {
+        var path = Path()
+        path.move(to: p1)
+        path.appendLine(to: p2)
+        return path
+    }
+    
+    static func line(from x1: Float, _ y1: Float, to x2: Float, _ y2: Float) -> Self {
+        return line(from: Point(x: x1, y: y1), to: Point(x: x2, y: y2))
+    }
+    
+    static func circle(center: Point, radius: Float) -> Self {
+        return Path().appendingCircle(center: center, radius: radius)
+    }
+    
+    static func circle(x: Float, y: Float, radius: Float) -> Self {
+        return Path().appendingCircle(x: x, y: y, radius: radius)
+    }
+    
+    static func rectangle(_ rect: Rectangle) -> Self {
+        return Path().appendingRectangle(rect)
+    }
+    
+    static func rectangle(origin: Point, size: Size) -> Self {
+        return Path().appendingRectangle(origin: origin, size: size)
+    }
+    
+    static func rectangle(x: Float, y: Float, width: Float, height: Float) -> Self {
+        return Path().appendingRectangle(x: x, y: y, width: width, height: height)
+    }
+    
+    static func ellipse(center: Point, horizontalRadius: Float, verticalRadius: Float) -> Self {
+        return Path().appendingEllipse(center: center, horizontalRadius: horizontalRadius, verticalRadius: verticalRadius)
+    }
+    
+    static func ellipse(x: Float, y: Float, horizontalRadius: Float, verticalRadius: Float) -> Self {
+        return Path().appendingEllipse(x: x, y: y, horizontalRadius: horizontalRadius, verticalRadius: verticalRadius)
+    }
+    
+    static func ellipse(inscribedIn rectangle: Rectangle) -> Self {
+        return Path().appendingEllipse(inscribedIn: rectangle)
+    }
+}

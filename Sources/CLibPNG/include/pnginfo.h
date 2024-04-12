@@ -51,6 +51,7 @@
  */
 #ifndef PNGINFO_H
 #define PNGINFO_H
+#include "pngstruct.h"
 
 struct png_info_def
 {
