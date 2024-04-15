@@ -602,6 +602,19 @@ public final class DrawingContext {
         }
     }
     
+    /// Changes the font.
+    ///
+    /// - parameter fontDescriptor: The descriptor of the font.
+    public func setFont(_ fontDescriptor: FontDescriptor) throws {
+        font = switch fontDescriptor.format {
+        case .ttf: try _document.loadTrueTypeFont(at: fontDescriptor.url)
+        case let .ttc(index): try _document.loadTrueTypeFontFromCollection(at: fontDescriptor.url, index: index)
+        }
+        encoding = .utf8
+        fontSize = fontDescriptor.size
+        textLeading = fontDescriptor.textLeading
+    }
+    
     /// Gets the width of the text in the current fontsize, character spacing and word spacing. If the text
     /// is multiline, returns the width of the longest line.
     ///
