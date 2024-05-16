@@ -924,12 +924,47 @@ public final class DrawingContext {
     /// - Parameters:
     ///   - image: The image to print.
     ///   - rect: The region to output the image.
-    public func draw(image imageDescriptor: ImageDescriptor, in rect: Rectangle) throws {
+    public func draw(image imageDescriptor: ImageDescriptor, in rect: Rectangle, resizeMode: ImageResizeMode = .aspectFit, alignment: ImageAlignment = .center) throws {
+        guard rect.size != .zero else {
+            return
+        }
+
+        // Load image
         let image = switch imageDescriptor.format {
         case .jpeg: try _document.loadJpegImage(at: imageDescriptor.url)
         case .png: try _document.loadPngImage(at: imageDescriptor.url)
         }
-        try draw(image: image, in: rect)
+
+        // Compute scale
+        var imageRect = rect
+        imageRect.size.width = Float(image.width)
+        imageRect.size.height = Float(image.height)
+        let xScale = imageRect.size.width / rect.size.width
+        let yScale = imageRect.size.height / rect.size.height
+        let scale = switch resizeMode {
+        case .aspectFit: fmax(fmax(xScale, yScale), 1)
+        case .aspectFill: fmin(xScale, yScale)
+        }
+        imageRect.size.width = round(imageRect.size.width / scale)
+        imageRect.size.height = round(imageRect.size.height / scale)
+
+        // Horizontal alignment
+        switch alignment {
+        case .topLeading, .leading, .bottomLeading: break
+        case .top, .center, .bottom: imageRect.origin.x += (rect.size.width - imageRect.size.width) / 2
+        case .topTrailing, .trailing, .bottomTrailing: imageRect.origin.x += rect.size.width - imageRect.size.width
+        }
+
+        // Vertical alignment
+        switch alignment {
+        case .topLeading, .top, .topTrailing: break
+        case .leading, .center, .trailing: imageRect.origin.y += (rect.size.height - imageRect.size.height) / 2
+        case .bottomLeading, .bottom, .bottomTrailing: imageRect.origin.y += rect.size.height - imageRect.size.height
+        }
+
+        try clip(to: .rectangle(rect)) {
+            try draw(image: image, in: imageRect)
+        }
     }
 
     /// Adds an annotation.
