@@ -957,9 +957,9 @@ public final class DrawingContext {
 
         // Vertical alignment
         switch alignment {
-        case .topLeading, .top, .topTrailing: break
+        case .topLeading, .top, .topTrailing: imageRect.origin.y += rect.size.height - imageRect.size.height
         case .leading, .center, .trailing: imageRect.origin.y += (rect.size.height - imageRect.size.height) / 2
-        case .bottomLeading, .bottom, .bottomTrailing: imageRect.origin.y += rect.size.height - imageRect.size.height
+        case .bottomLeading, .bottom, .bottomTrailing: break
         }
 
         try clip(to: .rectangle(rect)) {
