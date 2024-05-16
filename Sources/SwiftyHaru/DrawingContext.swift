@@ -304,6 +304,7 @@ public final class DrawingContext {
                                         color.magenta,
                                         color.yellow,
                                         color.black)
+
             case .rgb(let color):
                 HPDF_Page_SetRGBStroke(_page,
                                        color.red,
@@ -312,6 +313,11 @@ public final class DrawingContext {
             case .gray(let color):
                 HPDF_Page_SetGrayStroke(_page, color)
             }
+
+            // Alpha
+            let state = HPDF_CreateExtGState(_documentHandle)
+            HPDF_ExtGState_SetAlphaStroke(state, newValue.alpha)
+            HPDF_Page_SetExtGState(_page, state)
         }
     }
     
@@ -345,6 +351,11 @@ public final class DrawingContext {
             case .gray(let color):
                 HPDF_Page_SetGrayFill(_page, color)
             }
+
+            // Alpha
+            let state = HPDF_CreateExtGState(_documentHandle)
+            HPDF_ExtGState_SetAlphaFill(state, newValue.alpha)
+            HPDF_Page_SetExtGState(_page, state)
         }
     }
     
