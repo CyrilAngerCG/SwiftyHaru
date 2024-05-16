@@ -918,7 +918,20 @@ public final class DrawingContext {
             throw _document._error
         }
     }
-    
+
+    /// Prints the image at the specified position on the page.
+    ///
+    /// - Parameters:
+    ///   - image: The image to print.
+    ///   - rect: The region to output the image.
+    public func draw(image imageDescriptor: ImageDescriptor, in rect: Rectangle) throws {
+        let image = switch imageDescriptor.format {
+        case .jpeg: try _document.loadJpegImage(at: imageDescriptor.url)
+        case .png: try _document.loadPngImage(at: imageDescriptor.url)
+        }
+        try draw(image: image, in: rect)
+    }
+
     /// Adds an annotation.
     ///
     /// - Parameters:
