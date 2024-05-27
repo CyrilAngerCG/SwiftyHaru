@@ -526,6 +526,8 @@ public final class DrawingContext {
             }
             
             HPDF_Page_SetFontAndSize(_page, font, fontSize)
+
+            currentFontDescriptor = nil
         }
     }
     
@@ -550,6 +552,8 @@ public final class DrawingContext {
             let font = HPDF_GetFont(_documentHandle, self.font.name, encoding.name)
             
             HPDF_Page_SetFontAndSize(_page, font, newValue)
+
+            currentFontDescriptor = nil
         }
     }
     
@@ -570,6 +574,8 @@ public final class DrawingContext {
             } else {
                 HPDF_ResetError(_documentHandle)
             }
+
+            currentFontDescriptor = nil
         }
     }
     
@@ -613,10 +619,16 @@ public final class DrawingContext {
         }
     }
     
+    /// Active font descriptor.
+    private var currentFontDescriptor: FontDescriptor?
+
     /// Changes the font.
     ///
     /// - parameter fontDescriptor: The descriptor of the font.
     public func setFont(_ fontDescriptor: FontDescriptor) throws {
+        guard currentFontDescriptor != fontDescriptor else {
+            return
+        }
         font = switch fontDescriptor.format {
         case .ttf: try _document.loadTrueTypeFont(at: fontDescriptor.url)
         case let .ttc(index): try _document.loadTrueTypeFontFromCollection(at: fontDescriptor.url, index: index)
@@ -624,6 +636,7 @@ public final class DrawingContext {
         encoding = .utf8
         fontSize = fontDescriptor.size
         textLeading = fontDescriptor.textLeading
+        currentFontDescriptor = fontDescriptor
     }
     
     /// Gets the width of the text in the current fontsize, character spacing and word spacing. If the text
@@ -731,6 +744,8 @@ public final class DrawingContext {
         }
         set {
             HPDF_Page_SetTextLeading(_page, newValue)
+
+            currentFontDescriptor = nil
         }
     }
 
