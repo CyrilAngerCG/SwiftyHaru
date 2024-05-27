@@ -201,7 +201,11 @@ public final class DrawingContext {
             "The graphics state stack depth must not be greater than `DrawingContext.maxGraphicsStateDepth`."
         )
 
+        currentFontDescriptor = nil
+
         try body()
+
+        currentFontDescriptor = nil
 
         HPDF_Page_GRestore(_page)
     }
