@@ -8,7 +8,7 @@ let package = Package(
         .library(name: "SwiftyHaru", targets: ["SwiftyHaru"])
     ],
     dependencies: [
-        .package(url: "https://github.com/pointfreeco/swift-snapshot-testing.git", from: "1.1.0"),
+        .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.0.0")
     ],
     targets: [
         .target(name: "CLibPNG", cSettings: [.define("PNG_ARM_NEON_OPT", to: "0")]),
