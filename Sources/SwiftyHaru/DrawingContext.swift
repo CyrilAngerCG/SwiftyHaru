@@ -630,6 +630,7 @@ public final class DrawingContext {
     /// - parameter size: The size of the font.
     /// - parameter encoding: The encoding.
     public func setFont(_ font: Font, size: Float, encoding: Encoding) {
+        _enableMultibyteEncoding(for: encoding)
         guard let font = HPDF_GetFont(_documentHandle, font.name, encoding.name) else {
             switch _document._error {
             case PDFError.invalidFontName:
@@ -644,7 +645,6 @@ public final class DrawingContext {
         }
         precondition(size > 0 && size < DrawingContext.maximumFontSize,
                      "Valid values for fontSize are positive numbers up to `DrawingContext.maximumFontSize`.")
-        _enableMultibyteEncoding(for: encoding)
         HPDF_Page_SetFontAndSize(_page, font, size)
         currentFontDescriptor = nil
     }
