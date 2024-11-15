@@ -619,7 +619,24 @@ public final class PDFDocument {
         loadedImages[key] = image
         return image
     }
-    
+
+    // MARK: - Cache
+
+    /// Graphics states cache
+    private var cachedGraphicsStates: [Float: HPDF_ExtGState] = [:]
+
+    /// Creates or returns a cached graphics state with given alpha fill value.
+    func cachedGraphicsState(alphaFill: Float) -> HPDF_ExtGState {
+        if let graphicsState = cachedGraphicsStates[alphaFill] {
+            return graphicsState
+        } else {
+            let graphicsState = HPDF_CreateExtGState(_documentHandle)
+            HPDF_ExtGState_SetAlphaFill(graphicsState, alphaFill)
+            cachedGraphicsStates[alphaFill] = graphicsState
+            return graphicsState!
+        }
+    }
+
     // MARK: - Compression
 
     /// Set the mode of compression.

@@ -12,7 +12,11 @@ import Foundation
 public struct Path: Hashable {
     
     /// Creates an empty path.
-    public init() {}
+    public init(appendMoveToZero: Bool = true) {
+        if appendMoveToZero {
+            _pathConstructionSequence.append(.moveTo(.zero))
+        }
+    }
     
     internal enum _PathConstructionOperation: Hashable {
         case moveTo(Point)
@@ -27,7 +31,7 @@ public struct Path: Hashable {
         case ellipse(center: Point, xRadius: Float, yRadius: Float)
     }
     
-    internal var _pathConstructionSequence: [_PathConstructionOperation] = [.moveTo(.zero)]
+    internal var _pathConstructionSequence: [_PathConstructionOperation] = []
     
     private var _currentPosition = Point.zero
     
@@ -552,7 +556,7 @@ extension Path {
 
 public extension Path {
     static func line(from p1: Point, to p2: Point) -> Self {
-        var path = Path()
+        var path = Path(appendMoveToZero: false)
         path.move(to: p1)
         path.appendLine(to: p2)
         return path
@@ -563,34 +567,34 @@ public extension Path {
     }
     
     static func circle(center: Point, radius: Float) -> Self {
-        return Path().appendingCircle(center: center, radius: radius)
+        return Path(appendMoveToZero: false).appendingCircle(center: center, radius: radius)
     }
     
     static func circle(x: Float, y: Float, radius: Float) -> Self {
-        return Path().appendingCircle(x: x, y: y, radius: radius)
+        return Path(appendMoveToZero: false).appendingCircle(x: x, y: y, radius: radius)
     }
     
     static func rectangle(_ rect: Rectangle) -> Self {
-        return Path().appendingRectangle(rect)
+        return Path(appendMoveToZero: false).appendingRectangle(rect)
     }
     
     static func rectangle(origin: Point, size: Size) -> Self {
-        return Path().appendingRectangle(origin: origin, size: size)
+        return Path(appendMoveToZero: false).appendingRectangle(origin: origin, size: size)
     }
     
     static func rectangle(x: Float, y: Float, width: Float, height: Float) -> Self {
-        return Path().appendingRectangle(x: x, y: y, width: width, height: height)
+        return Path(appendMoveToZero: false).appendingRectangle(x: x, y: y, width: width, height: height)
     }
     
     static func ellipse(center: Point, horizontalRadius: Float, verticalRadius: Float) -> Self {
-        return Path().appendingEllipse(center: center, horizontalRadius: horizontalRadius, verticalRadius: verticalRadius)
+        return Path(appendMoveToZero: false).appendingEllipse(center: center, horizontalRadius: horizontalRadius, verticalRadius: verticalRadius)
     }
     
     static func ellipse(x: Float, y: Float, horizontalRadius: Float, verticalRadius: Float) -> Self {
-        return Path().appendingEllipse(x: x, y: y, horizontalRadius: horizontalRadius, verticalRadius: verticalRadius)
+        return Path(appendMoveToZero: false).appendingEllipse(x: x, y: y, horizontalRadius: horizontalRadius, verticalRadius: verticalRadius)
     }
     
     static func ellipse(inscribedIn rectangle: Rectangle) -> Self {
-        return Path().appendingEllipse(inscribedIn: rectangle)
+        return Path(appendMoveToZero: false).appendingEllipse(inscribedIn: rectangle)
     }
 }

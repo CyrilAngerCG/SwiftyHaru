@@ -319,9 +319,8 @@ public final class DrawingContext {
             }
 
             // Alpha
-            let state = HPDF_CreateExtGState(_documentHandle)
-            HPDF_ExtGState_SetAlphaStroke(state, newValue.alpha)
-            HPDF_Page_SetExtGState(_page, state)
+            let graphicsState = _document.cachedGraphicsState(alphaFill: newValue.alpha)
+            HPDF_Page_SetExtGState(_page, graphicsState)
         }
     }
     
@@ -357,9 +356,8 @@ public final class DrawingContext {
             }
 
             // Alpha
-            let state = HPDF_CreateExtGState(_documentHandle)
-            HPDF_ExtGState_SetAlphaFill(state, newValue.alpha)
-            HPDF_Page_SetExtGState(_page, state)
+            let graphicsState = _document.cachedGraphicsState(alphaFill: newValue.alpha)
+            HPDF_Page_SetExtGState(_page, graphicsState)
         }
     }
     
@@ -628,17 +626,41 @@ public final class DrawingContext {
 
     /// Changes the font.
     ///
+    /// - parameter font: The font.
+    /// - parameter size: The size of the font.
+    /// - parameter encoding: The encoding.
+    public func setFont(_ font: Font, size: Float, encoding: Encoding) {
+        guard let font = HPDF_GetFont(_documentHandle, font.name, encoding.name) else {
+            switch _document._error {
+            case PDFError.invalidFontName:
+                preconditionFailure("""
+                Font \(font) must be loaded in the document using \
+                loadTrueTypeFont(from:embeddingGlyphData:) or \
+                loadTrueTypeFontFromCollection(from:index:embeddingGlyphData:) methods.
+                """)
+            default:
+                preconditionFailure(_document._error.description)
+            }
+        }
+        precondition(size > 0 && size < DrawingContext.maximumFontSize,
+                     "Valid values for fontSize are positive numbers up to `DrawingContext.maximumFontSize`.")
+        _enableMultibyteEncoding(for: encoding)
+        HPDF_Page_SetFontAndSize(_page, font, size)
+        currentFontDescriptor = nil
+    }
+
+    /// Changes the font.
+    ///
     /// - parameter fontDescriptor: The descriptor of the font.
     public func setFont(_ fontDescriptor: FontDescriptor) throws {
         guard currentFontDescriptor != fontDescriptor else {
             return
         }
-        font = switch fontDescriptor.format {
+        let font = switch fontDescriptor.format {
         case .ttf: try _document.loadTrueTypeFont(at: fontDescriptor.url)
         case let .ttc(index): try _document.loadTrueTypeFontFromCollection(at: fontDescriptor.url, index: index)
         }
-        encoding = .utf8
-        fontSize = fontDescriptor.size
+        setFont(font, size: fontDescriptor.size, encoding: .utf8)
         textLeading = fontDescriptor.textLeading
         currentFontDescriptor = fontDescriptor
     }
