@@ -26,14 +26,21 @@ public struct FontDescriptor: Hashable {
         descriptor.size = size
         return descriptor
     }
-    
+
     public var textLeading: Float
     public func textLeading(_ textLeading: Float) -> Self {
         var descriptor = self
         descriptor.textLeading = textLeading
         return descriptor
     }
-    
+
+    public func ratio(_ ratio: Float) -> Self {
+        var descriptor = self
+        descriptor.size = round(size * ratio)
+        descriptor.textLeading = round(textLeading * ratio)
+        return descriptor
+    }
+
     public init(url: URL, format: Format, size: Float = DrawingContext.defaultFontSize, textLeading: Float = DrawingContext.defaultTextLeading) {
         self.url = url
         self.format = format
