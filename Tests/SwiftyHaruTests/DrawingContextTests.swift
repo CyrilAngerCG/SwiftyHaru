@@ -853,11 +853,11 @@ final class DrawingContextTests: TestCase {
         try document.addPage { context in
 
             let noWordWrap = try context.measureText(text, width: 80, wordwrap: false)
-            returnedLengthNoWordwrap = noWordWrap.utf8Length
+            returnedLengthNoWordwrap = noWordWrap.count
             returnedWidthNoWordwrap  = noWordWrap.realWidth
 
             let withWordWrap = try context.measureText(text, width: 80, wordwrap: true)
-            returnedLengthWordwrap = withWordWrap.utf8Length
+            returnedLengthWordwrap = withWordWrap.count
             returnedWidthWordwrap  = withWordWrap.realWidth
         }
 

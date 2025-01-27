@@ -19,7 +19,9 @@ public struct FontDescriptor: Hashable {
         case ttc(Int)
     }
     public var format: Format
-    
+
+    public var encoding: Encoding
+
     public var size: Float
     public func size(_ size: Float) -> Self {
         var descriptor = self
@@ -41,9 +43,10 @@ public struct FontDescriptor: Hashable {
         return descriptor
     }
 
-    public init(url: URL, format: Format, size: Float = DrawingContext.defaultFontSize, textLeading: Float = DrawingContext.defaultTextLeading) {
+    public init(url: URL, format: Format, encoding: Encoding = .utf8, size: Float = DrawingContext.defaultFontSize, textLeading: Float = DrawingContext.defaultTextLeading) {
         self.url = url
         self.format = format
+        self.encoding = encoding
         self.size = size
         self.textLeading = textLeading
     }

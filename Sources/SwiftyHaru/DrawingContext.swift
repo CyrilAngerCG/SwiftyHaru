@@ -620,7 +620,12 @@ public final class DrawingContext {
             break
         }
     }
-    
+
+    /// Convert an UTF-8 Swift string to a C string with the current page encoding.
+    private func convertText(_ text: String) -> [CChar]? {
+        return text.cString(using: encoding.toSystem())
+    }
+
     /// Active font descriptor.
     private var currentFontDescriptor: FontDescriptor?
 
@@ -660,7 +665,7 @@ public final class DrawingContext {
         case .ttf: try _document.loadTrueTypeFont(at: fontDescriptor.url)
         case let .ttc(index): try _document.loadTrueTypeFontFromCollection(at: fontDescriptor.url, index: index)
         }
-        setFont(font, size: fontDescriptor.size, encoding: .utf8)
+        setFont(font, size: fontDescriptor.size, encoding: fontDescriptor.encoding)
         textLeading = fontDescriptor.textLeading
         currentFontDescriptor = fontDescriptor
     }
@@ -677,10 +682,10 @@ public final class DrawingContext {
         
         let lines = text.components(separatedBy: .newlines)
         
-        return lines.map { HPDF_Page_TextWidth(_page, $0) }.max()!
+        return lines.map { HPDF_Page_TextWidth(_page, convertText($0)) }.max()!
     }
 
-    /// Calculates the number of UTF8 characters which can be included within the specified width.
+    /// Calculates the number of characters which can be included within the specified width.
     ///
     /// - Parameters:
     ///   - text:     The text to use for calculation.
@@ -689,24 +694,28 @@ public final class DrawingContext {
     ///               included within the width, if `wordwrap` parameter is `false` it returns 12, and if `wordwrap`
     ///               parameter is `true`, it returns 10 (the end of the previous word).
     /// - Returns:
-    ///   - `utf8Length`: The byte length which can be included within the specified width in current font size,
-    ///                   character spacing and word spacing.
-    ///   - `realWidth`:  The real width of the text.
+    ///   - `count`: The number of characters which can be included within the specified width in current font size, character spacing and word spacing.
+    ///   - `realWidth`: The real width of the text.
     public func measureText(_ text: String,
                             width: Float,
-                            wordwrap: Bool) throws -> (utf8Length: Int, realWidth: Float) {
+                            wordwrap: Bool) throws -> (count: Int, realWidth: Float) {
+        guard let cString = convertText(text) else {
+            return (0, 0)
+        }
 
         _setFontIfNeeded()
 
         var realWidth: Float = 0
-        let utf8Length = HPDF_Page_MeasureText(_page, text, width, wordwrap ? HPDF_TRUE : HPDF_FALSE, &realWidth)
+        let cLength = HPDF_Page_MeasureText(_page, cString, width, wordwrap ? HPDF_TRUE : HPDF_FALSE, &realWidth)
 
         if HPDF_GetError(_documentHandle) != UInt(HPDF_OK) {
             HPDF_ResetError(_documentHandle)
             throw _document._error
         }
 
-        return (utf8Length: Int(utf8Length), realWidth: realWidth)
+        let count = String(cString: Array(cString[0 ..< Int(cLength)]) + [0], encoding: encoding.toSystem())?.count
+
+        return (count: count ?? 0, realWidth: realWidth)
     }
     
     /// Gets the bounding box of the text in the current font size and leading. Text can be multiline.
@@ -860,14 +869,14 @@ public final class DrawingContext {
 
     private func _showText(_ text: String) throws {
         _setFontIfNeeded()
-        if HPDF_Page_ShowText(_page, text) != UInt(HPDF_OK) {
+        if HPDF_Page_ShowText(_page, convertText(text)) != UInt(HPDF_OK) {
             HPDF_ResetError(_documentHandle)
             throw _document._error
         }
     }
 
     private func _showTextNextLine(_ text: String) throws {
-        if HPDF_Page_ShowTextNextLine(_page, text) != UInt(HPDF_OK) {
+        if HPDF_Page_ShowTextNextLine(_page, convertText(text)) != UInt(HPDF_OK) {
             HPDF_ResetError(_documentHandle)
             throw _document._error
         }
@@ -944,7 +953,7 @@ public final class DrawingContext {
 
         let status = HPDF_Page_TextRect(_page,
                                         rect.x, rect.maxY, rect.maxX, rect.y,
-                                        text,
+                                        convertText(text),
                                         HPDF_TextAlignment(rawValue: alignment.rawValue), &charactersPrinted)
 
         let isInsufficientSpace = status == UInt(HPDF_PAGE_INSUFFICIENT_SPACE)

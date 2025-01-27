@@ -6,6 +6,8 @@
 //
 //
 
+import Foundation
+
 public struct Encoding: Hashable {
     
     // MARK: - Singlebyte encodings
@@ -213,5 +215,19 @@ public struct Encoding: Hashable {
     /// The name of the encoding
     public var name: String {
         return _name
+    }
+
+    public func toSystem() -> String.Encoding {
+        switch self {
+        case .macRoman: return .macOSRoman
+        case .windowsANSI: return .isoLatin1
+        case .latinAlphabet2: return .isoLatin2
+        case .cp1250: return .windowsCP1250
+        case .cp1251: return .windowsCP1251
+        case .cp1252: return .windowsCP1252
+        case .cp1253: return .windowsCP1253
+        case .cp1254: return .windowsCP1254
+        default: return .utf8
+        }
     }
 }
